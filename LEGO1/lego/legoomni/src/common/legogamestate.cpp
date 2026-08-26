@@ -498,7 +498,7 @@ MxResult LegoGameState::WriteVariable(LegoStorage* p_storage, MxVariableTable* p
 
 	if (variableValue) {
 		MxU8 length = strlen(p_variableName);
-		if (p_storage->Write(&length, sizeof(length)) != SUCCESS) {
+		if (p_storage->WriteLE(length) != SUCCESS) {
 			goto done;
 		}
 
@@ -507,7 +507,7 @@ MxResult LegoGameState::WriteVariable(LegoStorage* p_storage, MxVariableTable* p
 		}
 
 		length = strlen(variableValue);
-		if (p_storage->Write(&length, sizeof(length)) != SUCCESS) {
+		if (p_storage->WriteLE(length) != SUCCESS) {
 			goto done;
 		}
 
@@ -524,7 +524,7 @@ MxResult LegoGameState::WriteEndOfVariables(LegoStorage* p_storage)
 {
 	MxU8 len = strlen(g_endOfVariables);
 
-	if (p_storage->Write(&len, sizeof(len)) == SUCCESS) {
+	if (p_storage->WriteLE(len) == SUCCESS) {
 		return p_storage->Write(g_endOfVariables, len);
 	}
 
@@ -538,7 +538,7 @@ MxS32 LegoGameState::ReadVariable(LegoStorage* p_storage, MxVariableTable* p_to)
 	MxS32 result = 1;
 	MxU8 len;
 
-	if (p_storage->Read(&len, sizeof(MxU8)) != SUCCESS) {
+	if (p_storage->ReadLE(len) != SUCCESS) {
 		goto done;
 	}
 
@@ -556,7 +556,7 @@ MxS32 LegoGameState::ReadVariable(LegoStorage* p_storage, MxVariableTable* p_to)
 		goto done;
 	}
 
-	if (p_storage->Read(&len, sizeof(MxU8)) != SUCCESS) {
+	if (p_storage->ReadLE(len) != SUCCESS) {
 		goto done;
 	}
 

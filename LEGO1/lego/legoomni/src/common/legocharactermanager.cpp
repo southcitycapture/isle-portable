@@ -129,13 +129,13 @@ MxResult LegoCharacterManager::Write(LegoStorage* p_storage)
 	for (MxS32 i = 0; i < sizeOfArray(g_actorInfo); i++) {
 		LegoActorInfo* info = &g_actorInfo[i];
 
-		if (p_storage->Write(&info->m_sound, sizeof(info->m_sound)) != SUCCESS) {
+		if (p_storage->WriteLE(info->m_sound) != SUCCESS) {
 			goto done;
 		}
-		if (p_storage->Write(&info->m_move, sizeof(info->m_move)) != SUCCESS) {
+		if (p_storage->WriteLE(info->m_move) != SUCCESS) {
 			goto done;
 		}
-		if (p_storage->Write(&info->m_mood, sizeof(info->m_mood)) != SUCCESS) {
+		if (p_storage->WriteLE(info->m_mood) != SUCCESS) {
 			goto done;
 		}
 		if (p_storage->Write(
@@ -162,7 +162,7 @@ MxResult LegoCharacterManager::Write(LegoStorage* p_storage)
 			) != SUCCESS) {
 			goto done;
 		}
-		if (p_storage->Write(&info->m_parts[c_armrtPart].m_nameIndex, sizeof(info->m_parts[c_armrtPart].m_nameIndex)) !=
+		if (p_storage->WriteLE(info->m_parts[c_armrtPart].m_nameIndex) !=
 			SUCCESS) {
 			goto done;
 		}
@@ -172,7 +172,7 @@ MxResult LegoCharacterManager::Write(LegoStorage* p_storage)
 			) != SUCCESS) {
 			goto done;
 		}
-		if (p_storage->Write(&info->m_parts[c_legrtPart].m_nameIndex, sizeof(info->m_parts[c_legrtPart].m_nameIndex)) !=
+		if (p_storage->WriteLE(info->m_parts[c_legrtPart].m_nameIndex) !=
 			SUCCESS) {
 			goto done;
 		}
@@ -192,34 +192,34 @@ MxResult LegoCharacterManager::Read(LegoStorage* p_storage)
 	for (MxS32 i = 0; i < sizeOfArray(g_actorInfo); i++) {
 		LegoActorInfo* info = &g_actorInfo[i];
 
-		if (p_storage->Read(&info->m_sound, sizeof(MxS32)) != SUCCESS) {
+		if (p_storage->ReadLE(info->m_sound) != SUCCESS) {
 			goto done;
 		}
-		if (p_storage->Read(&info->m_move, sizeof(MxS32)) != SUCCESS) {
+		if (p_storage->ReadLE(info->m_move) != SUCCESS) {
 			goto done;
 		}
-		if (p_storage->Read(&info->m_mood, sizeof(MxU8)) != SUCCESS) {
+		if (p_storage->ReadLE(info->m_mood) != SUCCESS) {
 			goto done;
 		}
-		if (p_storage->Read(&info->m_parts[c_infohatPart].m_partNameIndex, sizeof(MxU8)) != SUCCESS) {
+		if (p_storage->ReadLE(info->m_parts[c_infohatPart].m_partNameIndex) != SUCCESS) {
 			goto done;
 		}
-		if (p_storage->Read(&info->m_parts[c_infohatPart].m_nameIndex, sizeof(MxU8)) != SUCCESS) {
+		if (p_storage->ReadLE(info->m_parts[c_infohatPart].m_nameIndex) != SUCCESS) {
 			goto done;
 		}
-		if (p_storage->Read(&info->m_parts[c_infogronPart].m_nameIndex, sizeof(MxU8)) != SUCCESS) {
+		if (p_storage->ReadLE(info->m_parts[c_infogronPart].m_nameIndex) != SUCCESS) {
 			goto done;
 		}
-		if (p_storage->Read(&info->m_parts[c_armlftPart].m_nameIndex, sizeof(MxU8)) != SUCCESS) {
+		if (p_storage->ReadLE(info->m_parts[c_armlftPart].m_nameIndex) != SUCCESS) {
 			goto done;
 		}
-		if (p_storage->Read(&info->m_parts[c_armrtPart].m_nameIndex, sizeof(MxU8)) != SUCCESS) {
+		if (p_storage->ReadLE(info->m_parts[c_armrtPart].m_nameIndex) != SUCCESS) {
 			goto done;
 		}
-		if (p_storage->Read(&info->m_parts[c_leglftPart].m_nameIndex, sizeof(MxU8)) != SUCCESS) {
+		if (p_storage->ReadLE(info->m_parts[c_leglftPart].m_nameIndex) != SUCCESS) {
 			goto done;
 		}
-		if (p_storage->Read(&info->m_parts[c_legrtPart].m_nameIndex, sizeof(MxU8)) != SUCCESS) {
+		if (p_storage->ReadLE(info->m_parts[c_legrtPart].m_nameIndex) != SUCCESS) {
 			goto done;
 		}
 	}

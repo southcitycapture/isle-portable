@@ -126,7 +126,7 @@ LegoResult LegoLOD::Read(Tgl::Renderer* p_renderer, LegoTextureContainer* p_text
 
 	unsigned char paletteEntries[256];
 
-	if (p_storage->Read(&m_flags, sizeof(LegoU32)) != SUCCESS) {
+	if (p_storage->ReadLE(m_flags) != SUCCESS) {
 		goto done;
 	}
 
@@ -144,7 +144,7 @@ LegoResult LegoLOD::Read(Tgl::Renderer* p_renderer, LegoTextureContainer* p_text
 
 	m_meshBuilder = p_renderer->CreateMeshBuilder();
 
-	if (p_storage->Read(&m_numMeshes, sizeof(LegoU32)) != SUCCESS) {
+	if (p_storage->ReadLE(m_numMeshes) != SUCCESS) {
 		goto done;
 	}
 
@@ -165,7 +165,7 @@ LegoResult LegoLOD::Read(Tgl::Renderer* p_renderer, LegoTextureContainer* p_text
 	indexBackwards = m_numMeshes - 1;
 	indexForwards = 0;
 
-	if (p_storage->Read(&tempNumVertsAndNormals, sizeof(LegoU32)) != SUCCESS) {
+	if (p_storage->ReadLE(tempNumVertsAndNormals) != SUCCESS) {
 		assertIfBeta10(0);
 		goto done;
 	}
@@ -174,7 +174,7 @@ LegoResult LegoLOD::Read(Tgl::Renderer* p_renderer, LegoTextureContainer* p_text
 	numVerts = *((LegoU16*) &tempNumVertsAndNormals) & MAXSHORT;
 	numNormals = (*((LegoU16*) &tempNumVertsAndNormals + 1) >> 1) & MAXSHORT;
 
-	if (p_storage->Read(&numTextureVertices, sizeof(LegoS32)) != SUCCESS) {
+	if (p_storage->ReadLE(numTextureVertices) != SUCCESS) {
 		assertIfBeta10(0);
 		goto done;
 	}
@@ -210,17 +210,21 @@ LegoResult LegoLOD::Read(Tgl::Renderer* p_renderer, LegoTextureContainer* p_text
 		const LegoChar *textureName, *materialName;
 		Tgl::ShadingModel shadingModel;
 
-		if (p_storage->Read(&numPolys, 2) != SUCCESS) {
+		LegoU16 numPolys16;
+		if (p_storage->ReadLE(numPolys16) != SUCCESS) {
 			assertIfBeta10(0);
 			goto done;
 		}
+		numPolys = numPolys16;
 
 		m_numPolys += numPolys & USHRT_MAX;
 
-		if (p_storage->Read(&numVertices, 2) != SUCCESS) {
+		LegoU16 numVertices16;
+		if (p_storage->ReadLE(numVertices16) != SUCCESS) {
 			assertIfBeta10(0);
 			goto done;
 		}
+		numVertices = numVertices16;
 
 		polyIndices = new LegoU32[numPolys & USHRT_MAX][sizeOfArray(*polyIndices)];
 		if (p_storage->Read(polyIndices, (numPolys & USHRT_MAX) * 3 * sizeof(LegoU32)) != SUCCESS) {
@@ -228,7 +232,7 @@ LegoResult LegoLOD::Read(Tgl::Renderer* p_renderer, LegoTextureContainer* p_text
 			goto done;
 		}
 
-		if (p_storage->Read(&numTextureIndices, sizeof(numTextureIndices)) != SUCCESS) {
+		if (p_storage->ReadLE(numTextureIndices) != SUCCESS) {
 			assertIfBeta10(0);
 			goto done;
 		}

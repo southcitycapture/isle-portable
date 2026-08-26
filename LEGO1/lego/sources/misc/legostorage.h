@@ -5,8 +5,40 @@
 #include "mxgeometry/mxgeometry3d.h"
 #include "mxstring.h"
 
+#include <SDL3/SDL_endian.h>
 #include <SDL3/SDL_iostream.h>
 #include <assert.h>
+
+// Game data is little-endian on disk. LegoSwapLE converts between the on-disk
+// and host representation; on little-endian hosts these are no-ops.
+inline LegoU8 LegoSwapLE(LegoU8 p_value)
+{
+	return p_value;
+}
+inline LegoS8 LegoSwapLE(LegoS8 p_value)
+{
+	return p_value;
+}
+inline LegoU16 LegoSwapLE(LegoU16 p_value)
+{
+	return SDL_Swap16LE(p_value);
+}
+inline LegoS16 LegoSwapLE(LegoS16 p_value)
+{
+	return (LegoS16) SDL_Swap16LE((LegoU16) p_value);
+}
+inline LegoU32 LegoSwapLE(LegoU32 p_value)
+{
+	return SDL_Swap32LE(p_value);
+}
+inline LegoS32 LegoSwapLE(LegoS32 p_value)
+{
+	return (LegoS32) SDL_Swap32LE((LegoU32) p_value);
+}
+inline LegoFloat LegoSwapLE(LegoFloat p_value)
+{
+	return SDL_SwapFloatLE(p_value);
+}
 
 // VTABLE: LEGO1 0x100d7d80
 // SIZE 0x08
@@ -28,6 +60,26 @@ public:
 	virtual LegoResult GetPosition(LegoU32& p_position) = 0;            // vtable+0x0c
 	virtual LegoResult SetPosition(LegoU32 p_position) = 0;             // vtable+0x10
 
+	// Read/write a single scalar stored little-endian on disk, converting
+	// to/from host byte order. Overload resolution on LegoSwapLE restricts
+	// these to scalar types with a defined on-disk byte order.
+	template <typename T>
+	LegoResult ReadLE(T& p_data)
+	{
+		LegoResult result = Read(&p_data, sizeof(T));
+		if (result == SUCCESS) {
+			p_data = LegoSwapLE(p_data);
+		}
+		return result;
+	}
+
+	template <typename T>
+	LegoResult WriteLE(T p_data)
+	{
+		p_data = LegoSwapLE(p_data);
+		return Write(&p_data, sizeof(T));
+	}
+
 	// FUNCTION: LEGO1 0x10045ae0
 	virtual LegoBool IsWriteMode() { return m_mode == c_write; } // vtable+0x14
 
@@ -46,21 +98,21 @@ public:
 	// FUNCTION: BETA10 0x1004b0d0
 	LegoStorage* WriteU8(LegoU8 p_data)
 	{
-		Write(&p_data, sizeof(LegoU8));
+		WriteLE(p_data);
 		return this;
 	}
 
 	// FUNCTION: BETA10 0x10017ce0
 	LegoStorage* WriteS16(LegoS16 p_data)
 	{
-		Write(&p_data, sizeof(LegoS16));
+		WriteLE(p_data);
 		return this;
 	}
 
 	// FUNCTION: BETA10 0x1004b110
 	LegoStorage* WriteU16(LegoU16 p_data)
 	{
-		Write(&p_data, sizeof(LegoU16));
+		WriteLE(p_data);
 		return this;
 	}
 
@@ -68,7 +120,7 @@ public:
 	// FUNCTION: BETA10 0x10088540
 	LegoStorage* WriteS32(MxS32 p_data)
 	{
-		Write(&p_data, sizeof(MxS32));
+		WriteLE(p_data);
 		return this;
 	}
 
@@ -76,14 +128,14 @@ public:
 	// FUNCTION: BETA10 0x1004b150
 	LegoStorage* WriteU32(MxU32 p_data)
 	{
-		Write(&p_data, sizeof(MxU32));
+		WriteLE(p_data);
 		return this;
 	}
 
 	// FUNCTION: BETA10 0x10073610
 	LegoStorage* WriteFloat(LegoFloat p_data)
 	{
-		Write(&p_data, sizeof(LegoFloat));
+		WriteLE(p_data);
 		return this;
 	}
 
@@ -117,21 +169,21 @@ public:
 	// FUNCTION: BETA10 0x1004b190
 	LegoStorage* ReadU8(LegoU8& p_data)
 	{
-		Read(&p_data, sizeof(LegoU8));
+		ReadLE(p_data);
 		return this;
 	}
 
 	// FUNCTION: BETA10 0x10024680
 	LegoStorage* ReadS16(LegoS16& p_data)
 	{
-		Read(&p_data, sizeof(LegoS16));
+		ReadLE(p_data);
 		return this;
 	}
 
 	// FUNCTION: BETA10 0x1004b1d0
 	LegoStorage* ReadU16(LegoU16& p_data)
 	{
-		Read(&p_data, sizeof(LegoU16));
+		ReadLE(p_data);
 		return this;
 	}
 
@@ -139,7 +191,7 @@ public:
 	// FUNCTION: BETA10 0x10088580
 	LegoStorage* ReadS32(MxS32& p_data)
 	{
-		Read(&p_data, sizeof(MxS32));
+		ReadLE(p_data);
 		return this;
 	}
 
@@ -147,14 +199,14 @@ public:
 	// FUNCTION: BETA10 0x1004b210
 	LegoStorage* ReadU32(MxU32& p_data)
 	{
-		Read(&p_data, sizeof(MxU32));
+		ReadLE(p_data);
 		return this;
 	}
 
 	// FUNCTION: BETA10 0x10073650
 	LegoStorage* ReadFloat(LegoFloat& p_data)
 	{
-		Read(&p_data, sizeof(LegoFloat));
+		ReadLE(p_data);
 		return this;
 	}
 
