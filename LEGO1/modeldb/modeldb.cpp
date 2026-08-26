@@ -1,5 +1,7 @@
 #include "modeldb.h"
 
+#include "mxutilities.h"
+
 DECOMP_SIZE_ASSERT(ModelDbWorld, 0x18)
 DECOMP_SIZE_ASSERT(ModelDbPart, 0x18)
 DECOMP_SIZE_ASSERT(ModelDbModel, 0x38)
@@ -22,6 +24,7 @@ MxResult ModelDbModel::Read(SDL_IOStream* p_file)
 	if (SDL_ReadIO(p_file, &len, sizeof(MxU32)) != sizeof(MxU32)) {
 		return FAILURE;
 	}
+	len = MxSwapLE(len);
 
 	m_modelName = new char[((len + 3) & ~3u)];
 	if (SDL_ReadIO(p_file, m_modelName, len) != len) {
@@ -31,12 +34,15 @@ MxResult ModelDbModel::Read(SDL_IOStream* p_file)
 	if (SDL_ReadIO(p_file, &m_modelDataLength, sizeof(MxU32)) != sizeof(MxU32)) {
 		return FAILURE;
 	}
+	m_modelDataLength = MxSwapLE(m_modelDataLength);
 	if (SDL_ReadIO(p_file, &m_modelDataOffset, sizeof(MxU32)) != sizeof(MxU32)) {
 		return FAILURE;
 	}
+	m_modelDataOffset = MxSwapLE(m_modelDataOffset);
 	if (SDL_ReadIO(p_file, &len, sizeof(len)) != sizeof(len)) {
 		return FAILURE;
 	}
+	len = MxSwapLE(len);
 
 	m_presenterName = new char[((len + 3) & ~3u)];
 	if (SDL_ReadIO(p_file, m_presenterName, len) != len) {
@@ -51,6 +57,11 @@ MxResult ModelDbModel::Read(SDL_IOStream* p_file)
 	}
 	if (SDL_ReadIO(p_file, m_up, 3 * sizeof(float)) != 3 * sizeof(float)) {
 		return FAILURE;
+	}
+	for (int i = 0; i < 3; i++) {
+		m_location[i] = MxSwapLE(m_location[i]);
+		m_direction[i] = MxSwapLE(m_direction[i]);
+		m_up[i] = MxSwapLE(m_up[i]);
 	}
 	if (SDL_ReadIO(p_file, &m_visible, sizeof(MxU8)) != sizeof(MxU8)) {
 		return FAILURE;
@@ -67,6 +78,7 @@ MxResult ModelDbPart::Read(SDL_IOStream* p_file)
 	if (SDL_ReadIO(p_file, &len, sizeof(MxU32)) != sizeof(MxU32)) {
 		return FAILURE;
 	}
+	len = MxSwapLE(len);
 
 	char* buff = new char[len];
 
@@ -80,9 +92,11 @@ MxResult ModelDbPart::Read(SDL_IOStream* p_file)
 	if (SDL_ReadIO(p_file, &m_partDataLength, sizeof(undefined4)) != sizeof(undefined4)) {
 		return FAILURE;
 	}
+	m_partDataLength = MxSwapLE(m_partDataLength);
 	if (SDL_ReadIO(p_file, &m_partDataOffset, sizeof(undefined4)) != sizeof(undefined4)) {
 		return FAILURE;
 	}
+	m_partDataOffset = MxSwapLE(m_partDataOffset);
 
 	return SUCCESS;
 }
@@ -97,6 +111,7 @@ MxResult ReadModelDbWorlds(SDL_IOStream* p_file, ModelDbWorld*& p_worlds, MxS32&
 	if (SDL_ReadIO(p_file, &numWorlds, sizeof(numWorlds)) != sizeof(numWorlds)) {
 		return FAILURE;
 	}
+	numWorlds = MxSwapLE(numWorlds);
 
 	ModelDbWorld* worlds = new ModelDbWorld[numWorlds];
 	MxS32 worldNameLen, numParts, i, j;
@@ -105,6 +120,7 @@ MxResult ReadModelDbWorlds(SDL_IOStream* p_file, ModelDbWorld*& p_worlds, MxS32&
 		if (SDL_ReadIO(p_file, &worldNameLen, sizeof(MxS32)) != sizeof(MxS32)) {
 			return FAILURE;
 		}
+		worldNameLen = MxSwapLE(worldNameLen);
 
 		worlds[i].m_worldName = new char[worldNameLen];
 		if (SDL_ReadIO(p_file, worlds[i].m_worldName, worldNameLen) != worldNameLen) {
@@ -114,6 +130,7 @@ MxResult ReadModelDbWorlds(SDL_IOStream* p_file, ModelDbWorld*& p_worlds, MxS32&
 		if (SDL_ReadIO(p_file, &numParts, sizeof(MxS32)) != sizeof(MxS32)) {
 			return FAILURE;
 		}
+		numParts = MxSwapLE(numParts);
 
 		worlds[i].m_partList = new ModelDbPartList();
 
@@ -130,6 +147,7 @@ MxResult ReadModelDbWorlds(SDL_IOStream* p_file, ModelDbWorld*& p_worlds, MxS32&
 		if (SDL_ReadIO(p_file, &worlds[i].m_numModels, sizeof(MxS32)) != sizeof(MxS32)) {
 			return FAILURE;
 		}
+		worlds[i].m_numModels = MxSwapLE(worlds[i].m_numModels);
 
 		worlds[i].m_models = new ModelDbModel[worlds[i].m_numModels];
 

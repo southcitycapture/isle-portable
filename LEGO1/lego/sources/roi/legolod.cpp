@@ -181,7 +181,7 @@ LegoResult LegoLOD::Read(Tgl::Renderer* p_renderer, LegoTextureContainer* p_text
 
 	if (numVerts > 0) {
 		vertices = new float[numVerts][sizeOfArray(*vertices)];
-		if (p_storage->Read(vertices, numVerts * 3 * sizeof(float)) != SUCCESS) {
+		if (p_storage->ReadLEArray((float*) vertices, numVerts * 3) != SUCCESS) {
 			// LINE: BETA10 0x1018d443
 			assertIfBeta10(0);
 			goto done;
@@ -190,7 +190,7 @@ LegoResult LegoLOD::Read(Tgl::Renderer* p_renderer, LegoTextureContainer* p_text
 
 	if (numNormals > 0) {
 		normals = new float[numNormals][sizeOfArray(*normals)];
-		if (p_storage->Read(normals, numNormals * 3 * sizeof(float)) != SUCCESS) {
+		if (p_storage->ReadLEArray((float*) normals, numNormals * 3) != SUCCESS) {
 			assertIfBeta10(0);
 			goto done;
 		}
@@ -198,7 +198,7 @@ LegoResult LegoLOD::Read(Tgl::Renderer* p_renderer, LegoTextureContainer* p_text
 
 	if (numTextureVertices > 0) {
 		textureVertices = new float[numTextureVertices][sizeOfArray(*textureVertices)];
-		if (p_storage->Read(textureVertices, numTextureVertices * 2 * sizeof(float)) != SUCCESS) {
+		if (p_storage->ReadLEArray((float*) textureVertices, numTextureVertices * 2) != SUCCESS) {
 			// LINE: BETA10 0x1018d513
 			assertIfBeta10(0);
 			goto done;
@@ -227,7 +227,7 @@ LegoResult LegoLOD::Read(Tgl::Renderer* p_renderer, LegoTextureContainer* p_text
 		numVertices = numVertices16;
 
 		polyIndices = new LegoU32[numPolys & USHRT_MAX][sizeOfArray(*polyIndices)];
-		if (p_storage->Read(polyIndices, (numPolys & USHRT_MAX) * 3 * sizeof(LegoU32)) != SUCCESS) {
+		if (p_storage->ReadLEArray((LegoU32*) polyIndices, (numPolys & USHRT_MAX) * 3) != SUCCESS) {
 			assertIfBeta10(0);
 			goto done;
 		}
@@ -239,7 +239,7 @@ LegoResult LegoLOD::Read(Tgl::Renderer* p_renderer, LegoTextureContainer* p_text
 
 		if (numTextureIndices > 0) {
 			textureIndices = new LegoU32[numPolys & USHRT_MAX][sizeOfArray(*textureIndices)];
-			if (p_storage->Read(textureIndices, (numPolys & USHRT_MAX) * 3 * sizeof(LegoU32)) != SUCCESS) {
+			if (p_storage->ReadLEArray((LegoU32*) textureIndices, (numPolys & USHRT_MAX) * 3) != SUCCESS) {
 				assertIfBeta10(0);
 				goto done;
 			}

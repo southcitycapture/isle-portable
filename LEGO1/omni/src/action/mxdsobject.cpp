@@ -272,8 +272,9 @@ MxDSObject* CreateStreamObject(MxDSFile* p_file, MxS16 p_ofs)
 		return NULL;
 	}
 
-	if (p_file->Read((MxU8*) &tmpChunk.ckid, 8) == 0 && tmpChunk.ckid == FOURCC('M', 'x', 'S', 't')) {
-		if (p_file->Read((MxU8*) &tmpChunk.ckid, 8) == 0 && tmpChunk.ckid == FOURCC('M', 'x', 'O', 'b')) {
+	if (p_file->Read((MxU8*) &tmpChunk.ckid, 8) == 0 && MxSwapLE(tmpChunk.ckid) == FOURCC('M', 'x', 'S', 't')) {
+		if (p_file->Read((MxU8*) &tmpChunk.ckid, 8) == 0 && MxSwapLE(tmpChunk.ckid) == FOURCC('M', 'x', 'O', 'b')) {
+			tmpChunk.cksize = MxSwapLE(tmpChunk.cksize);
 
 			buf = new MxU8[tmpChunk.cksize];
 			if (!buf) {

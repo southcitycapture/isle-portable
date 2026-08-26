@@ -1,5 +1,7 @@
 #include "legoextraactor.h"
 
+#include "mxutilities.h"
+
 #include "anim/legoanim.h"
 #include "legoanimpresenter.h"
 #include "legocachesoundmanager.h"
@@ -410,7 +412,7 @@ void LegoExtraActor::VTable0xc4()
 	}
 
 	if (m_worldSpeed > -0.001 || m_worldSpeed < 0.001) {
-		MxU16 name = *((MxU16*) m_roi->GetName());
+		MxU16 name = UnalignedRead<MxU16>((MxU8*) m_roi->GetName());
 		MxBool b = name == TWOCC('m', 'a') || name == TWOCC('p', 'a');
 
 		if (b) {

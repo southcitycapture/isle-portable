@@ -1,5 +1,7 @@
 #include "flic.h"
 
+#include "mxutilities.h"
+
 DECOMP_SIZE_ASSERT(FLIC_CHUNK, 0x06)
 DECOMP_SIZE_ASSERT(FLIC_HEADER, 0x14)
 DECOMP_SIZE_ASSERT(FLIC_FRAME, 0x10)
@@ -159,15 +161,19 @@ void WritePixelPairs(
 	short is_odd = p_count & 1;
 	p_count >>= 1;
 
+	// p_pixel holds the two pixels little-endian packed: low byte first.
+	BYTE first = (BYTE) (p_pixel & 0xFF);
+	BYTE second = (BYTE) (p_pixel >> 8);
+
 	BYTE* dst = ((p_bitmapHeader->biWidth + 3) & -4) * p_row + p_column + p_pixelData;
 	while (--p_count >= 0) {
-		memcpy(dst, &p_pixel, sizeof(WORD));
+		dst[0] = first;
+		dst[1] = second;
 		dst += sizeof(WORD);
 	}
 
 	if (is_odd) {
-		BYTE* dst_byte = (BYTE*) dst;
-		*dst_byte = p_pixel;
+		*dst = first;
 	}
 }
 
@@ -184,11 +190,13 @@ short DecodeChunks(
 {
 	*p_decodedColorMap = FALSE;
 
-	for (short subchunk = 0; subchunk < (short) p_flcFrame->chunks; subchunk++) {
+	// FLIC_FRAME/FLIC_CHUNK overlay the raw little-endian stream buffer.
+	short subchunks = (short) UnalignedRead<MxU16>((MxU8*) p_flcFrame + 6);
+	for (short subchunk = 0; subchunk < subchunks; subchunk++) {
 		FLIC_CHUNK* chunk = (FLIC_CHUNK*) p_flcSubchunks;
-		p_flcSubchunks += chunk->size;
+		p_flcSubchunks += UnalignedRead<MxU32>((MxU8*) chunk);
 
-		switch (chunk->type) {
+		switch (UnalignedRead<MxU16>((MxU8*) chunk + 4)) {
 		case FLI_CHUNK_COLOR256:
 			DecodeColors256(p_bitmapHeader, (BYTE*) (chunk + 1));
 			*p_decodedColorMap = TRUE;
@@ -233,8 +241,7 @@ void DecodeColorPackets(LPBITMAPINFOHEADER p_bitmapHeader, BYTE* p_data)
 {
 	short colorIndex = 0;
 	BYTE* colors = p_data;
-	short* pPackets = (short*) colors;
-	short packets = *pPackets;
+	short packets = UnalignedRead<MxS16>(colors);
 	colors += 2;
 
 	while (--packets >= 0) {
@@ -319,12 +326,10 @@ void DecodeLC(LPBITMAPINFOHEADER p_bitmapHeader, BYTE* p_pixelData, BYTE* p_data
 {
 	short xofs = 0;
 	short yofs = 0;
-	short* word_data = (short*) p_data;
-	BYTE* data = (BYTE*) word_data + 4;
-	short row = p_flcHeader->height - (*word_data + yofs) - 1;
+	BYTE* data = p_data + 4;
+	short row = p_flcHeader->height - (UnalignedRead<MxS16>(p_data) + yofs) - 1;
 
-	word_data++;
-	short lines = *word_data;
+	short lines = UnalignedRead<MxS16>(p_data + 2);
 
 	while (--lines >= 0) {
 		short column = xofs;
@@ -373,7 +378,8 @@ void DecodeSS2(LPBITMAPINFOHEADER p_bitmapHeader, BYTE* p_pixelData, BYTE* p_dat
 
 	// The first word in the data following the chunk header contains the number of lines in the chunk.
 	// The line count does not include skipped lines.
-	short lines = *(short*) data.word++;
+	short lines = UnalignedRead<MxS16>(data.byte);
+	data.word++;
 
 	// LINE: BETA10 0x1013e666
 	short row = p_flcHeader->height - yofs - 1;
@@ -387,7 +393,8 @@ skip_lines:
 
 start_packet:
 	// LINE: BETA10 0x1013e692
-	token = *(short*) data.word++;
+	token = UnalignedRead<MxS16>(data.byte);
+	data.word++;
 
 	if (token >= 0) {
 		goto column_loop;
@@ -398,7 +405,8 @@ start_packet:
 	}
 
 	WritePixel(p_bitmapHeader, p_pixelData, xmax, row, token);
-	token = *(short*) data.word++;
+	token = UnalignedRead<MxS16>(data.byte);
+	data.word++;
 
 	// LINE: BETA10 0x1013e6ef
 	if (!token) {
@@ -437,8 +445,9 @@ start_packet:
 		}
 
 		type = -type;
-		WORD* p_pixel = data.word++;
-		WritePixelPairs(p_bitmapHeader, p_pixelData, column, row, *p_pixel, type >> 1);
+		WORD pixelPair = UnalignedRead<MxU16>(data.byte);
+		data.word++;
+		WritePixelPairs(p_bitmapHeader, p_pixelData, column, row, pixelPair, type >> 1);
 		column += type;
 		// LINE: BETA10 0x1013e813
 		if (--token != 0) {
@@ -465,7 +474,7 @@ void DecodeBlack(LPBITMAPINFOHEADER p_bitmapHeader, BYTE* p_pixelData, BYTE* p_d
 	pixel[0] = pixel[1] = 0;
 
 	for (short i = height - 1; i >= 0; i--) {
-		WritePixelPairs(p_bitmapHeader, p_pixelData, t_col, t_row + i, *(WORD*) pixel, width / 2);
+		WritePixelPairs(p_bitmapHeader, p_pixelData, t_col, t_row + i, UnalignedRead<MxU16>(pixel), width / 2);
 
 		if (width & 1) {
 			WritePixel(p_bitmapHeader, p_pixelData, t_col + width - 1, t_row + i, 0);
@@ -499,7 +508,7 @@ void DecodeFLCFrame(
 )
 {
 	FLIC_FRAME* frame = p_flcFrame;
-	if (frame->type != FLI_CHUNK_FRAME) {
+	if (UnalignedRead<MxU16>((MxU8*) frame + 4) != FLI_CHUNK_FRAME) {
 		return;
 	}
 

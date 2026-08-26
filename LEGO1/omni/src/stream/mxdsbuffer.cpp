@@ -464,7 +464,7 @@ MxResult MxDSBuffer::CalcBytesRemaining(MxU8* p_data)
 			if (m_writeOffset == m_bytesRemaining) {
 				MxU32 length =
 					UnalignedRead<MxU32>((MxU8*) MxStreamChunk::IntoLength(m_pBuffer)) + MxStreamChunk::GetHeaderSize();
-				memcpy(m_pBuffer + 4, &length, sizeof(length));
+				UnalignedWrite(m_pBuffer + 4, length);
 			}
 
 			m_bytesRemaining -= bytesRead;
@@ -541,9 +541,9 @@ MxResult MxDSBuffer::FUN_100c7090(MxDSBuffer* p_buf)
 MxResult MxDSBuffer::Append(MxU8* p_buffer1, MxU8* p_buffer2)
 {
 	if (p_buffer1 && p_buffer2) {
-		MxU32 size = ((MxU32*) p_buffer2)[1] - MxDSChunk::GetHeaderSize();
-		memcpy(p_buffer1 + ((MxU32*) p_buffer1)[1] + 8, p_buffer2 + MxDSChunk::GetHeaderSize() + 8, size);
-		((MxU32*) p_buffer1)[1] += size;
+		MxU32 size = UnalignedRead<MxU32>(p_buffer2 + 4) - MxDSChunk::GetHeaderSize();
+		memcpy(p_buffer1 + UnalignedRead<MxU32>(p_buffer1 + 4) + 8, p_buffer2 + MxDSChunk::GetHeaderSize() + 8, size);
+		UnalignedWrite<MxU32>(p_buffer1 + 4, UnalignedRead<MxU32>(p_buffer1 + 4) + size);
 		return SUCCESS;
 	}
 	return FAILURE;

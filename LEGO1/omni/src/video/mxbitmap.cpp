@@ -214,6 +214,10 @@ MxResult MxBitmap::LoadFile(SDL_IOStream* p_handle)
 		goto done;
 	}
 
+	hdr.bfType = MxSwapLE(hdr.bfType);
+	hdr.bfSize = MxSwapLE(hdr.bfSize);
+	hdr.bfOffBits = MxSwapLE(hdr.bfOffBits);
+
 	if (hdr.bfType != g_bitmapSignature) {
 		goto done;
 	}
@@ -226,6 +230,20 @@ MxResult MxBitmap::LoadFile(SDL_IOStream* p_handle)
 	if (!SDL_ReadIO(p_handle, m_info, MxBitmapInfoSize())) {
 		goto done;
 	}
+
+	// Keep the in-memory header in host byte order; the palette that follows
+	// is byte data.
+	m_info->m_bmiHeader.biSize = MxSwapLE(m_info->m_bmiHeader.biSize);
+	m_info->m_bmiHeader.biWidth = MxSwapLE(m_info->m_bmiHeader.biWidth);
+	m_info->m_bmiHeader.biHeight = MxSwapLE(m_info->m_bmiHeader.biHeight);
+	m_info->m_bmiHeader.biPlanes = MxSwapLE(m_info->m_bmiHeader.biPlanes);
+	m_info->m_bmiHeader.biBitCount = MxSwapLE(m_info->m_bmiHeader.biBitCount);
+	m_info->m_bmiHeader.biCompression = MxSwapLE(m_info->m_bmiHeader.biCompression);
+	m_info->m_bmiHeader.biSizeImage = MxSwapLE(m_info->m_bmiHeader.biSizeImage);
+	m_info->m_bmiHeader.biXPelsPerMeter = MxSwapLE(m_info->m_bmiHeader.biXPelsPerMeter);
+	m_info->m_bmiHeader.biYPelsPerMeter = MxSwapLE(m_info->m_bmiHeader.biYPelsPerMeter);
+	m_info->m_bmiHeader.biClrUsed = MxSwapLE(m_info->m_bmiHeader.biClrUsed);
+	m_info->m_bmiHeader.biClrImportant = MxSwapLE(m_info->m_bmiHeader.biClrImportant);
 
 	if (m_info->m_bmiHeader.biBitCount != 8) {
 		goto done;

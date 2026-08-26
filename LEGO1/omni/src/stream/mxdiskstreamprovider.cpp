@@ -1,5 +1,7 @@
 #include "mxdiskstreamprovider.h"
 
+#include "mxutilities.h"
+
 #include "mxautolock.h"
 #include "mxdiskstreamcontroller.h"
 #include "mxdsbuffer.h"
@@ -329,13 +331,13 @@ MxResult MxDiskStreamProvider::FUN_100d1b20(MxDSStreamingAction* p_action)
 #define IntoType(p) ((MxU32*) (p))
 
 	while (data) {
-		if (*IntoType(data) != FOURCC('M', 'x', 'O', 'b') &&
-			*MxStreamChunk::IntoTime(data) > p_action->GetUnknown9c()) {
-			*IntoType(data) = FOURCC('p', 'a', 'd', ' ');
+		if (UnalignedRead<MxU32>((MxU8*) IntoType(data)) != FOURCC('M', 'x', 'O', 'b') &&
+			UnalignedRead<MxLong>((MxU8*) MxStreamChunk::IntoTime(data)) > p_action->GetUnknown9c()) {
+			UnalignedWrite<MxU32>((MxU8*) IntoType(data), FOURCC('p', 'a', 'd', ' '));
 
 			// DECOMP: prefer order that matches retail versus beta
-			*(MxU32*) (data + 4) = buffer->GetBuffer() + buffer->GetWriteOffset() - data - 8;
-			memset(data + 8, 0, *(MxU32*) (data + 4));
+			UnalignedWrite<MxU32>(data + 4, buffer->GetBuffer() + buffer->GetWriteOffset() - data - 8);
+			memset(data + 8, 0, UnalignedRead<MxU32>(data + 4));
 			size = ReadData(buffer->GetBuffer(), buffer->GetWriteOffset());
 
 			buffer = new MxDSBuffer();
@@ -353,7 +355,7 @@ MxResult MxDiskStreamProvider::FUN_100d1b20(MxDSStreamingAction* p_action)
 			MxU32 unk0x14 = p_action->GetUnknowna0()->GetUnknown14();
 
 			for (data = p_action->GetUnknowna0()->GetBuffer();
-				 *MxStreamChunk::IntoTime(data) <= p_action->GetUnknown9c();
+				 UnalignedRead<MxLong>((MxU8*) MxStreamChunk::IntoTime(data)) <= p_action->GetUnknown9c();
 				 data = MxDSChunk::End(data)) {
 				unk0x14 += MxDSChunk::Size(data);
 			}

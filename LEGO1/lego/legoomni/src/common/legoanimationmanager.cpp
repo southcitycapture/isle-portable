@@ -1889,7 +1889,7 @@ void LegoAnimationManager::PurgeExtra(MxBool p_und)
 			LegoROI* roi = m_extras[i].m_roi;
 
 			if (roi != NULL) {
-				MxU16 prefix = *(MxU16*) roi->GetName();
+				MxU16 prefix = UnalignedRead<MxU16>((MxU8*) roi->GetName());
 				MxLong und = ((m_numAllowedExtras - 2) * 280000 / 18) + 20000;
 				MxBool maOrPa = prefix == TWOCC('m', 'a') || prefix == TWOCC('p', 'a');
 

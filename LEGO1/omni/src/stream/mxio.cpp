@@ -1,5 +1,7 @@
 #include "mxio.h"
 
+#include "mxutilities.h"
+
 #include "decomp.h"
 #include "mxstring.h"
 
@@ -475,6 +477,9 @@ MxU16 MXIOINFO::Descend(ISLE_MMCKINFO* p_chunkInfo, const ISLE_MMCKINFO* p_paren
 			result = MMIOERR_CANNOTREAD;
 		}
 		else {
+			p_chunkInfo->ckid = MxSwapLE(p_chunkInfo->ckid);
+			p_chunkInfo->cksize = MxSwapLE(p_chunkInfo->cksize);
+
 			if (m_info.pchBuffer) {
 				p_chunkInfo->dwDataOffset = m_info.pchNext - m_info.pchBuffer + m_info.lBufOffset;
 			}
@@ -482,9 +487,13 @@ MxU16 MXIOINFO::Descend(ISLE_MMCKINFO* p_chunkInfo, const ISLE_MMCKINFO* p_paren
 				p_chunkInfo->dwDataOffset = m_info.lDiskOffset;
 			}
 
-			if ((p_chunkInfo->ckid == FOURCC_RIFF || p_chunkInfo->ckid == FOURCC_LIST) &&
-				Read(&p_chunkInfo->fccType, 4) != 4) {
-				result = MMIOERR_CANNOTREAD;
+			if (p_chunkInfo->ckid == FOURCC_RIFF || p_chunkInfo->ckid == FOURCC_LIST) {
+				if (Read(&p_chunkInfo->fccType, 4) != 4) {
+					result = MMIOERR_CANNOTREAD;
+				}
+				else {
+					p_chunkInfo->fccType = MxSwapLE(p_chunkInfo->fccType);
+				}
 			}
 		}
 	}
@@ -512,6 +521,8 @@ MxU16 MXIOINFO::Descend(ISLE_MMCKINFO* p_chunkInfo, const ISLE_MMCKINFO* p_paren
 			}
 			else {
 				readOk = TRUE;
+				tmp.ckid = MxSwapLE(tmp.ckid);
+				tmp.cksize = MxSwapLE(tmp.cksize);
 				if (m_info.pchBuffer) {
 					tmp.dwDataOffset = m_info.pchNext - m_info.pchBuffer + m_info.lBufOffset;
 				}
@@ -528,8 +539,11 @@ MxU16 MXIOINFO::Descend(ISLE_MMCKINFO* p_chunkInfo, const ISLE_MMCKINFO* p_paren
 						result = MMIOERR_CANNOTREAD;
 						running = FALSE;
 					}
-					else if (p_chunkInfo->fccType == tmp.fccType) {
-						running = FALSE;
+					else {
+						tmp.fccType = MxSwapLE(tmp.fccType);
+						if (p_chunkInfo->fccType == tmp.fccType) {
+							running = FALSE;
+						}
 					}
 				}
 				else if (p_chunkInfo->ckid == tmp.ckid) {
@@ -583,14 +597,15 @@ MxU16 MXIOINFO::Ascend(ISLE_MMCKINFO* p_chunkInfo, MxU16 p_ascend)
 
 			// Now write the corrected size
 			if (m_info.pchBuffer && ofs >= m_info.lBufOffset && m_info.cchBuffer + m_info.lBufOffset > ofs) {
-				memcpy(m_info.pchBuffer + (ofs - m_info.lBufOffset), (char*) &size, 4);
+				UnalignedWrite<MxU32>((MxU8*) m_info.pchBuffer + (ofs - m_info.lBufOffset), size);
 				m_info.dwFlags |= MMIO_DIRTY;
 			}
 			else {
 				m_info.lDiskOffset = SDL_SeekIO(M_FILE, ofs, SDL_IO_SEEK_SET);
 
 				if (m_info.lDiskOffset == ofs) {
-					if (SDL_WriteIO(M_FILE, (char*) &size, 4) != 4) {
+					MxU32 sizeOnDisk = MxSwapLE((MxU32) size);
+					if (SDL_WriteIO(M_FILE, (char*) &sizeOnDisk, 4) != 4) {
 						m_info.lDiskOffset = SDL_SeekIO(M_FILE, 0, SDL_IO_SEEK_CUR);
 						result = MMIOERR_CANNOTWRITE;
 					}
@@ -647,7 +662,12 @@ MxU16 MXIOINFO::CreateChunk(ISLE_MMCKINFO* p_chunkInfo, MxU16 p_create)
 		size = 8;
 	}
 
-	if (Write(p_chunkInfo, size) != size) {
+	ISLE_MMCKINFO chunkOnDisk = *p_chunkInfo;
+	chunkOnDisk.ckid = MxSwapLE(chunkOnDisk.ckid);
+	chunkOnDisk.cksize = MxSwapLE(chunkOnDisk.cksize);
+	chunkOnDisk.fccType = MxSwapLE(chunkOnDisk.fccType);
+
+	if (Write(&chunkOnDisk, size) != size) {
 		result = MMIOERR_CANNOTWRITE;
 	}
 

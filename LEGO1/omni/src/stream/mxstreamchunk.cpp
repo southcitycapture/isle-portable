@@ -37,16 +37,16 @@ MxU32 MxStreamChunk::ReadChunkHeader(MxU8* p_chunkData)
 	if (p_chunkData) {
 		MxU8* chunkData = p_chunkData;
 
-		memcpy(&m_flags, p_chunkData, sizeof(m_flags));
+		m_flags = UnalignedRead<MxU16>(p_chunkData);
 		p_chunkData += sizeof(MxU16);
 
-		memcpy(&m_objectId, p_chunkData, sizeof(m_objectId));
+		m_objectId = UnalignedRead<MxU32>(p_chunkData);
 		p_chunkData += sizeof(MxU32);
 
-		memcpy(&m_time, p_chunkData, sizeof(m_time));
+		m_time = UnalignedRead<MxLong>(p_chunkData);
 		p_chunkData += sizeof(MxU32);
 
-		memcpy(&m_length, p_chunkData, sizeof(m_length));
+		m_length = UnalignedRead<MxU32>(p_chunkData);
 		p_chunkData += sizeof(MxU32);
 
 		m_data = p_chunkData;

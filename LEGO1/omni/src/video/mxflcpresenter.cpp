@@ -30,6 +30,17 @@ void MxFlcPresenter::LoadHeader(MxStreamChunk* p_chunk)
 {
 	m_flcHeader = (FLIC_HEADER*) new MxU8[p_chunk->GetLength()];
 	memcpy(m_flcHeader, p_chunk->GetData(), p_chunk->GetLength());
+
+	// The header is kept in host byte order; the frame data that follows is
+	// decoded on the fly in flic.cpp.
+	m_flcHeader->size = MxSwapLE(m_flcHeader->size);
+	m_flcHeader->type = MxSwapLE(m_flcHeader->type);
+	m_flcHeader->frames = MxSwapLE(m_flcHeader->frames);
+	m_flcHeader->width = MxSwapLE(m_flcHeader->width);
+	m_flcHeader->height = MxSwapLE(m_flcHeader->height);
+	m_flcHeader->depth = MxSwapLE(m_flcHeader->depth);
+	m_flcHeader->flags = MxSwapLE(m_flcHeader->flags);
+	m_flcHeader->speed = MxSwapLE(m_flcHeader->speed);
 }
 
 // FUNCTION: LEGO1 0x100b34d0
@@ -69,7 +80,12 @@ void MxFlcPresenter::LoadFrame(MxStreamChunk* p_chunk)
 	}
 
 	for (MxS32 i = 0; i < rectCount; i++) {
-		MxRect32 rect = UnalignedRead<MxRect32>(rects);
+		MxRect32 rect(
+			UnalignedRead<MxS32>(rects),
+			UnalignedRead<MxS32>(rects + 4),
+			UnalignedRead<MxS32>(rects + 8),
+			UnalignedRead<MxS32>(rects + 12)
+		);
 		rects += sizeof(MxRect32);
 		rect += m_location;
 		MVideoManager()->InvalidateRect(rect);

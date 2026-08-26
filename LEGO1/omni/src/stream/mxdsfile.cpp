@@ -1,5 +1,7 @@
 #include "mxdsfile.h"
 
+#include "mxutilities.h"
+
 #include "decomp.h"
 #include "mxdebug.h"
 
@@ -70,6 +72,11 @@ MxResult MxDSFile::ReadChunks()
 	}
 
 	m_io.Read(&m_header, 0x0c);
+	m_header.m_majorVersion = MxSwapLE(m_header.m_majorVersion);
+	m_header.m_minorVersion = MxSwapLE(m_header.m_minorVersion);
+	m_header.m_bufferSize = MxSwapLE(m_header.m_bufferSize);
+	m_header.m_streamBuffersNum = MxSwapLE(m_header.m_streamBuffersNum);
+	m_header.m_reserved = MxSwapLE(m_header.m_reserved);
 	if ((m_header.m_majorVersion != SI_MAJOR_VERSION) || (m_header.m_minorVersion != SI_MINOR_VERSION)) {
 		sprintf(tempBuffer, "Wrong SI file version. %d.%d expected.", SI_MAJOR_VERSION, SI_MINOR_VERSION);
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "LEGO® Island Error", tempBuffer, NULL);
@@ -83,8 +90,12 @@ MxResult MxDSFile::ReadChunks()
 	}
 
 	m_io.Read(&m_lengthInDWords, 4);
+	m_lengthInDWords = MxSwapLE(m_lengthInDWords);
 	m_pBuffer = new MxU32[m_lengthInDWords];
 	m_io.Read(m_pBuffer, m_lengthInDWords * 4);
+	for (MxU32 i = 0; i < m_lengthInDWords; i++) {
+		m_pBuffer[i] = MxSwapLE(m_pBuffer[i]);
+	}
 	return SUCCESS;
 }
 

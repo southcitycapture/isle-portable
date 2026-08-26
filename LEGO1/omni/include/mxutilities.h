@@ -4,6 +4,7 @@
 #include "lego1_export.h"
 #include "mxtypes.h"
 
+#include <SDL3/SDL_endian.h>
 #include <SDL3/SDL_stdinc.h>
 #include <string.h>
 
@@ -39,12 +40,61 @@ inline T Max(T p_t1, T p_t2)
 	return p_t1 > p_t2 ? p_t1 : p_t2;
 }
 
+// SI stream data is little-endian on disk. MxSwapLE converts a scalar
+// between the on-disk and host representation; no-ops on little-endian hosts.
+inline MxU8 MxSwapLE(MxU8 p_value)
+{
+	return p_value;
+}
+inline MxS8 MxSwapLE(MxS8 p_value)
+{
+	return p_value;
+}
+inline MxU16 MxSwapLE(MxU16 p_value)
+{
+	return SDL_Swap16LE(p_value);
+}
+inline MxS16 MxSwapLE(MxS16 p_value)
+{
+	return (MxS16) SDL_Swap16LE((MxU16) p_value);
+}
+inline MxU32 MxSwapLE(MxU32 p_value)
+{
+	return SDL_Swap32LE(p_value);
+}
+inline MxS32 MxSwapLE(MxS32 p_value)
+{
+	return (MxS32) SDL_Swap32LE((MxU32) p_value);
+}
+inline float MxSwapLE(float p_value)
+{
+	return SDL_SwapFloatLE(p_value);
+}
+inline double MxSwapLE(double p_value)
+{
+	Uint64 bits;
+	memcpy(&bits, &p_value, sizeof(bits));
+	bits = SDL_Swap64LE(bits);
+	memcpy(&p_value, &bits, sizeof(bits));
+	return p_value;
+}
+
+// Read/write a scalar stored little-endian at a possibly unaligned address,
+// converting to/from host byte order. Overload resolution on MxSwapLE
+// restricts these to scalars with a defined on-disk byte order.
 template <typename T>
-T UnalignedRead(MxU8* p_source)
+T UnalignedRead(const MxU8* p_source)
 {
 	T value;
 	memcpy(&value, p_source, sizeof(T));
-	return value;
+	return MxSwapLE(value);
+}
+
+template <typename T>
+void UnalignedWrite(MxU8* p_dest, T p_value)
+{
+	p_value = MxSwapLE(p_value);
+	memcpy(p_dest, &p_value, sizeof(T));
 }
 
 template <class T>

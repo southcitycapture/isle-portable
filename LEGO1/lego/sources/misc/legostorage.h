@@ -80,6 +80,18 @@ public:
 		return Write(&p_data, sizeof(T));
 	}
 
+	template <typename T>
+	LegoResult ReadLEArray(T* p_data, LegoU32 p_count)
+	{
+		LegoResult result = Read(p_data, p_count * sizeof(T));
+		if (result == SUCCESS) {
+			for (LegoU32 i = 0; i < p_count; i++) {
+				p_data[i] = LegoSwapLE(p_data[i]);
+			}
+		}
+		return result;
+	}
+
 	// FUNCTION: LEGO1 0x10045ae0
 	virtual LegoBool IsWriteMode() { return m_mode == c_write; } // vtable+0x14
 

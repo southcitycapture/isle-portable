@@ -3,6 +3,7 @@
 #include "decomp.h"
 #include "define.h"
 #include "mxautolock.h"
+#include "mxutilities.h"
 #include "mxdssound.h"
 #include "mxdssubscriber.h"
 #include "mxmain.h"
@@ -56,12 +57,30 @@ void MxWavePresenter::Destroy(MxBool p_fromDestructor)
 	}
 }
 
+// The PCM samples in the stream are little-endian; the mixer expects host
+// byte order. A straight memcpy on little-endian hosts.
+static void CopySamplesLE(void* p_dst, const void* p_src, MxU32 p_length, MxU16 p_bitsPerSample)
+{
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+	if (p_bitsPerSample == 16) {
+		const MxU8* src = (const MxU8*) p_src;
+		MxU8* dst = (MxU8*) p_dst;
+		for (MxU32 i = 0; i + 1 < p_length; i += 2) {
+			dst[i] = src[i + 1];
+			dst[i + 1] = src[i];
+		}
+		return;
+	}
+#endif
+	memcpy(p_dst, p_src, p_length);
+}
+
 // FUNCTION: LEGO1 0x100b1bd0
 MxBool MxWavePresenter::WriteToSoundBuffer(void* p_audioPtr, MxU32 p_length)
 {
 	if (m_action->IsLooping()) {
 		assert(m_ab.m_offset + p_length <= m_ab.m_length);
-		memcpy(m_ab.m_data + m_ab.m_offset, p_audioPtr, p_length);
+		CopySamplesLE(m_ab.m_data + m_ab.m_offset, p_audioPtr, p_length, m_waveFormat->m_bitsPerSample);
 		m_ab.m_offset += p_length;
 		return TRUE;
 	}
@@ -82,7 +101,7 @@ MxBool MxWavePresenter::WriteToSoundBuffer(void* p_audioPtr, MxU32 p_length)
 		ma_uint32 acquiredBytes = acquiredFrames * ma_get_bytes_per_frame(m_rb->format, m_rb->channels);
 		assert(p_length <= acquiredBytes);
 
-		memcpy(bufferOut, p_audioPtr, p_length);
+		CopySamplesLE(bufferOut, p_audioPtr, p_length, m_waveFormat->m_bitsPerSample);
 
 		// [library:audio] Pad with silence data if we don't have a full chunk.
 		if (p_length < acquiredBytes) {
@@ -102,6 +121,13 @@ void MxWavePresenter::ReadyTickle()
 	if (chunk) {
 		m_waveFormat = (WaveFormat*) new MxU8[chunk->GetLength()];
 		memcpy(m_waveFormat, chunk->GetData(), chunk->GetLength());
+
+		m_waveFormat->m_formatTag = MxSwapLE(m_waveFormat->m_formatTag);
+		m_waveFormat->m_channels = MxSwapLE(m_waveFormat->m_channels);
+		m_waveFormat->m_samplesPerSec = MxSwapLE(m_waveFormat->m_samplesPerSec);
+		m_waveFormat->m_avgBytesPerSec = MxSwapLE(m_waveFormat->m_avgBytesPerSec);
+		m_waveFormat->m_blockAlign = MxSwapLE(m_waveFormat->m_blockAlign);
+		m_waveFormat->m_bitsPerSample = MxSwapLE(m_waveFormat->m_bitsPerSample);
 		m_subscriber->FreeDataChunk(chunk);
 		ParseExtra();
 		ProgressTickleState(e_starting);
