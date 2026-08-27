@@ -1,5 +1,7 @@
 #include "mxramstreamprovider.h"
 
+#include <SDL3/SDL_log.h>
+
 #include "decomp.h"
 #include "mxdsbuffer.h"
 #include "mxdsfile.h"
@@ -126,15 +128,18 @@ MxU32 ReadData(MxU8* p_buffer, MxU32 p_size)
 					data = MxDSChunk::End(data3);
 
 					if ((UnalignedRead<MxU32>(data2) == FOURCC('M', 'x', 'C', 'h')) &&
-						(*MxStreamChunk::IntoFlags(data2) & DS_CHUNK_SPLIT)) {
+						(UnalignedRead<MxU16>((MxU8*) MxStreamChunk::IntoFlags(data2)) & DS_CHUNK_SPLIT)) {
 						if (*MxStreamChunk::IntoObjectId(data2) == *MxStreamChunk::IntoObjectId(data3) &&
-							(*MxStreamChunk::IntoFlags(data3) & DS_CHUNK_SPLIT) &&
+							(UnalignedRead<MxU16>((MxU8*) MxStreamChunk::IntoFlags(data3)) & DS_CHUNK_SPLIT) &&
 							*MxStreamChunk::IntoTime(data2) == *MxStreamChunk::IntoTime(data3)) {
 							MxDSBuffer::Append(data2, data3);
 							continue;
 						}
 						else {
-							*MxStreamChunk::IntoFlags(data2) &= ~DS_CHUNK_SPLIT;
+							UnalignedWrite<MxU16>(
+								(MxU8*) MxStreamChunk::IntoFlags(data2),
+								UnalignedRead<MxU16>((MxU8*) MxStreamChunk::IntoFlags(data2)) & (MxU16) ~DS_CHUNK_SPLIT
+							);
 						}
 					}
 
@@ -142,7 +147,7 @@ MxU32 ReadData(MxU8* p_buffer, MxU32 p_size)
 					memmove(data2, data3, MxDSChunk::Size(data3));
 
 					if (UnalignedRead<MxU32>((MxU8*) MxStreamChunk::IntoObjectId(data2)) == id &&
-						(*MxStreamChunk::IntoFlags(data2) & DS_CHUNK_END_OF_STREAM)) {
+						(UnalignedRead<MxU16>((MxU8*) MxStreamChunk::IntoFlags(data2)) & DS_CHUNK_END_OF_STREAM)) {
 						break;
 					}
 				}
@@ -156,6 +161,9 @@ MxU32 ReadData(MxU8* p_buffer, MxU32 p_size)
 		}
 	}
 
-	*MxStreamChunk::IntoFlags(data2) &= ~DS_CHUNK_SPLIT;
+	UnalignedWrite<MxU16>(
+		(MxU8*) MxStreamChunk::IntoFlags(data2),
+		UnalignedRead<MxU16>((MxU8*) MxStreamChunk::IntoFlags(data2)) & (MxU16) ~DS_CHUNK_SPLIT
+	);
 	return MxDSChunk::Size(data2) + (MxU32) (data2 - p_buffer);
 }

@@ -1,5 +1,7 @@
 #include "mxdsbuffer.h"
 
+#include <SDL3/SDL_log.h>
+
 #include "mxdiskstreamcontroller.h"
 #include "mxdschunk.h"
 #include "mxdsstreamingaction.h"
@@ -294,8 +296,10 @@ MxResult MxDSBuffer::ParseChunk(
 			buffer->SetSourceBuffer(p_header->GetBuffer());
 		}
 
-		MxU16* flags = MxStreamChunk::IntoFlags(buffer->GetBuffer());
-		*flags = p_header->GetChunkFlags() & ~DS_CHUNK_SPLIT;
+		UnalignedWrite<MxU16>(
+			(MxU8*) MxStreamChunk::IntoFlags(buffer->GetBuffer()),
+			p_header->GetChunkFlags() & (MxU16) ~DS_CHUNK_SPLIT
+		);
 
 		delete p_header;
 		(*p_streamingAction)->SetUnknowna0(buffer);
