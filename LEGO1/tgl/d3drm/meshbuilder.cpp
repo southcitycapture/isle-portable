@@ -62,7 +62,12 @@ inline Result CreateMesh(
 	MeshImpl::MeshDataType& rpMesh
 )
 {
-	unsigned short* faceIndices = (unsigned short*) p_faceIndices;
+	// Each 32-bit face entry packs the vertex index in its low half and
+	// the normal index plus a "new vertex" flag in its high half. Split
+	// the halves with shifts: reinterpreting the array as unsigned short
+	// pairs (as the original code did) picks the wrong halves on
+	// big-endian hosts.
+	unsigned int* faceEntries = (unsigned int*) p_faceIndices;
 	D3DRMGROUPINDEX groupIndex = 0;
 	int faceCount = p_numFaces * 3;
 	int count = 0;
@@ -76,13 +81,15 @@ inline Result CreateMesh(
 	rpMesh->groupMesh = pD3DRM;
 
 	for (int i = 0; i < faceCount; i++) {
-		if (((faceIndices[2 * i + 1]) >> 0x0f) & 0x01) {
-			unsigned int j = 3 * faceIndices[2 * i];
+		unsigned short lowHalf = (unsigned short) (faceEntries[i] & 0xFFFF);
+		unsigned short highHalf = (unsigned short) (faceEntries[i] >> 16);
+		if ((highHalf >> 0x0f) & 0x01) {
+			unsigned int j = 3 * lowHalf;
 			vertices[count].position.x = p_positions[j];
 			vertices[count].position.y = p_positions[j + 1];
 			vertices[count].position.z = p_positions[j + 2];
 
-			int k = 3 * (faceIndices[2 * i + 1] & MAXSHORT);
+			int k = 3 * (highHalf & MAXSHORT);
 			vertices[count].normal.x = p_normals[k];
 			vertices[count].normal.y = p_normals[k + 1];
 			vertices[count].normal.z = p_normals[k + 2];
@@ -97,7 +104,7 @@ inline Result CreateMesh(
 			count++;
 		}
 		else {
-			fData[i] = faceIndices[2 * i];
+			fData[i] = lowHalf;
 		}
 	}
 
