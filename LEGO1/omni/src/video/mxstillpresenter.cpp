@@ -43,6 +43,21 @@ void MxStillPresenter::LoadHeader(MxStreamChunk* p_chunk)
 	MxU8* data = new MxU8[p_chunk->GetLength()];
 	m_bitmapInfo = (MxBITMAPINFO*) data;
 	memcpy(m_bitmapInfo, p_chunk->GetData(), p_chunk->GetLength());
+
+	// The header arrives little-endian in the stream; keep it host-order in
+	// memory, like MxBitmap::LoadFile does for file loads.
+	BITMAPINFOHEADER& h = m_bitmapInfo->m_bmiHeader;
+	h.biSize = MxSwapLE(h.biSize);
+	h.biWidth = MxSwapLE(h.biWidth);
+	h.biHeight = MxSwapLE(h.biHeight);
+	h.biPlanes = MxSwapLE(h.biPlanes);
+	h.biBitCount = MxSwapLE(h.biBitCount);
+	h.biCompression = MxSwapLE(h.biCompression);
+	h.biSizeImage = MxSwapLE(h.biSizeImage);
+	h.biXPelsPerMeter = MxSwapLE(h.biXPelsPerMeter);
+	h.biYPelsPerMeter = MxSwapLE(h.biYPelsPerMeter);
+	h.biClrUsed = MxSwapLE(h.biClrUsed);
+	h.biClrImportant = MxSwapLE(h.biClrImportant);
 }
 
 // FUNCTION: LEGO1 0x100b9d10
