@@ -1,5 +1,7 @@
 #include "legoloadcachesoundpresenter.h"
 
+#include "mxutilities.h"
+
 #include "legocachesoundmanager.h"
 #include "legocachsound.h"
 #include "legosoundmanager.h"
@@ -45,15 +47,24 @@ void LegoLoadCacheSoundPresenter::ReadyTickle()
 	MxStreamChunk* chunk = NextChunk();
 
 	if (chunk) {
-		WaveFormat* header = (WaveFormat*) chunk->GetData();
+		/* The header arrives little-endian in the stream buffer. */
+		WaveFormat header = *(WaveFormat*) chunk->GetData();
+		header.m_formatTag = MxSwapLE(header.m_formatTag);
+		header.m_channels = MxSwapLE(header.m_channels);
+		header.m_samplesPerSec = MxSwapLE(header.m_samplesPerSec);
+		header.m_avgBytesPerSec = MxSwapLE(header.m_avgBytesPerSec);
+		header.m_blockAlign = MxSwapLE(header.m_blockAlign);
+		header.m_bitsPerSample = MxSwapLE(header.m_bitsPerSample);
+		header.m_dataSize = MxSwapLE(header.m_dataSize);
+		header.m_flags = MxSwapLE(header.m_flags);
 		m_dataSize = 0;
 
-		MxU8* data = new MxU8[header->m_dataSize];
+		MxU8* data = new MxU8[header.m_dataSize];
 		m_data = data;
 		m_pData = data;
 
 		m_cacheSound = new LegoCacheSound();
-		m_waveFormat = *header;
+		m_waveFormat = header;
 
 		m_subscriber->FreeDataChunk(chunk);
 		ProgressTickleState(e_streaming);

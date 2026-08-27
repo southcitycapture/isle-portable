@@ -128,6 +128,8 @@ void MxWavePresenter::ReadyTickle()
 		m_waveFormat->m_avgBytesPerSec = MxSwapLE(m_waveFormat->m_avgBytesPerSec);
 		m_waveFormat->m_blockAlign = MxSwapLE(m_waveFormat->m_blockAlign);
 		m_waveFormat->m_bitsPerSample = MxSwapLE(m_waveFormat->m_bitsPerSample);
+		m_waveFormat->m_dataSize = MxSwapLE(m_waveFormat->m_dataSize);
+		m_waveFormat->m_flags = MxSwapLE(m_waveFormat->m_flags);
 		m_subscriber->FreeDataChunk(chunk);
 		ParseExtra();
 		ProgressTickleState(e_starting);
