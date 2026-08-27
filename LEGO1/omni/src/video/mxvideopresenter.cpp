@@ -8,6 +8,8 @@
 #include "mxregion.h"
 #include "mxvideomanager.h"
 
+#include <SDL3/SDL_log.h>
+
 DECOMP_SIZE_ASSERT(MxVideoPresenter, 0x64);
 DECOMP_SIZE_ASSERT(MxVideoPresenter::AlphaMask, 0x0c);
 
@@ -218,6 +220,16 @@ inline MxS32 MxVideoPresenter::PrepareRects(RECT& p_rectDest, RECT& p_rectSrc)
 // FUNCTION: LEGO1 0x100b2a70
 void MxVideoPresenter::PutFrame()
 {
+	if (!m_surface && !m_frameBitmap) {
+		// Neither a surface nor a decoded frame exists yet; every branch
+		// below would dereference one of them.
+		SDL_Log(
+			"MxVideoPresenter::PutFrame: no surface or bitmap for \"%s\", skipping",
+			m_action ? m_action->GetObjectName() : "?"
+		);
+		return;
+	}
+
 	MxDisplaySurface* displaySurface = MVideoManager()->GetDisplaySurface();
 	MxRegion* region = MVideoManager()->GetRegion();
 	MxRect32 rect(MxPoint32(0, 0), MxSize32(GetWidth(), GetHeight()));

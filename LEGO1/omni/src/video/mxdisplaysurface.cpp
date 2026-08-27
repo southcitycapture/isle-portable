@@ -8,6 +8,7 @@
 #include "mxutilities.h"
 #include "mxvideomanager.h"
 
+#include <SDL3/SDL_error.h>
 #include <SDL3/SDL_log.h>
 #include <assert.h>
 #ifdef MINIWIN
@@ -716,6 +717,7 @@ LPDIRECTDRAWSURFACE MxDisplaySurface::VTable0x44(
 	ddsd.dwSize = sizeof(ddsd);
 
 	if (draw->GetDisplayMode(&ddsd)) {
+		SDL_Log("MxDisplaySurface::VTable0x44: GetDisplayMode failed");
 		return NULL;
 	}
 
@@ -723,6 +725,10 @@ LPDIRECTDRAWSURFACE MxDisplaySurface::VTable0x44(
 	ddsd.dwWidth = p_bitmap->GetBmiWidth();
 	ddsd.dwHeight = p_bitmap->GetBmiHeightAbs();
 #ifdef MINIWIN
+	// GetDisplayMode above filled ddpfPixelFormat with the display's
+	// format; clear it fully so its masks cannot leak into the 8-bit
+	// palettized request.
+	memset(&ddsd.ddpfPixelFormat, 0, sizeof(ddsd.ddpfPixelFormat));
 	ddsd.ddpfPixelFormat.dwSize = sizeof(DDPIXELFORMAT);
 	ddsd.ddpfPixelFormat.dwFlags = DDPF_PALETTEINDEXED8 | DDPF_RGB;
 	ddsd.ddpfPixelFormat.dwRGBBitCount = 8;
@@ -747,6 +753,9 @@ LPDIRECTDRAWSURFACE MxDisplaySurface::VTable0x44(
 		}
 		else {
 			surface = NULL;
+		}
+		if (!surface) {
+			SDL_Log("MxDisplaySurface::VTable0x44: CreateSurface failed: %s", SDL_GetError());
 		}
 	}
 
@@ -778,6 +787,7 @@ LPDIRECTDRAWSURFACE MxDisplaySurface::VTable0x44(
 		ddsd.dwSize = sizeof(ddsd);
 
 		if (surface->Lock(NULL, &ddsd, DDLOCK_WAIT | DDLOCK_WRITEONLY, 0) != DD_OK) {
+			SDL_Log("MxDisplaySurface::VTable0x44: Lock failed: %s", SDL_GetError());
 			surface->Release();
 			surface = NULL;
 		}
@@ -1120,6 +1130,10 @@ LPDIRECTDRAWSURFACE MxDisplaySurface::CreateCursorSurface(const CursorBitmap* p_
 	ddsd.dwFlags = DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT | DDSD_CAPS;
 	ddsd.ddsCaps.dwCaps = DDSCAPS_VIDEOMEMORY | DDSCAPS_OFFSCREENPLAIN;
 #ifdef MINIWIN
+	// GetDisplayMode above filled ddpfPixelFormat with the display's
+	// format; clear it fully so its masks cannot leak into the 8-bit
+	// palettized request.
+	memset(&ddsd.ddpfPixelFormat, 0, sizeof(ddsd.ddpfPixelFormat));
 	ddsd.ddpfPixelFormat.dwSize = sizeof(DDPIXELFORMAT);
 	ddsd.ddpfPixelFormat.dwFlags = DDPF_PALETTEINDEXED8 | DDPF_RGB;
 	ddsd.ddpfPixelFormat.dwRGBBitCount = 8;

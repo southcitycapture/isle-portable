@@ -109,18 +109,28 @@ HRESULT DirectDrawImpl::CreateSurface(
 
 			format = SDL_GetPixelFormatForMasks(bpp, rMask, gMask, bMask, aMask);
 			if (format == SDL_PIXELFORMAT_UNKNOWN) {
+				SDL_Log(
+					"DirectDrawImpl::CreateSurface: no format for bpp=%d masks=%08x/%08x/%08x/%08x",
+					bpp,
+					rMask,
+					gMask,
+					bMask,
+					aMask
+				);
 				return DDERR_INVALIDPIXELFORMAT;
 			}
 		}
 	}
 
 	if ((lpDDSurfaceDesc->dwFlags & (DDSD_WIDTH | DDSD_HEIGHT)) != (DDSD_WIDTH | DDSD_HEIGHT)) {
+		SDL_Log("DirectDrawImpl::CreateSurface: missing WIDTH/HEIGHT flags (%08x)", lpDDSurfaceDesc->dwFlags);
 		return DDERR_INVALIDPARAMS;
 	}
 
 	int width = lpDDSurfaceDesc->dwWidth;
 	int height = lpDDSurfaceDesc->dwHeight;
 	if (width == 0 || height == 0) {
+		SDL_Log("DirectDrawImpl::CreateSurface: zero size %dx%d", width, height);
 		return DDERR_INVALIDPARAMS;
 	}
 	*lplpDDSurface = static_cast<IDirectDrawSurface*>(new DirectDrawSurfaceImpl(width, height, format));
