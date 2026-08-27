@@ -170,9 +170,11 @@ LegoResult LegoLOD::Read(Tgl::Renderer* p_renderer, LegoTextureContainer* p_text
 		goto done;
 	}
 
-	// TODO: Can't get this one right
-	numVerts = *((LegoU16*) &tempNumVertsAndNormals) & MAXSHORT;
-	numNormals = (*((LegoU16*) &tempNumVertsAndNormals + 1) >> 1) & MAXSHORT;
+	// The two counts are packed into one little-endian 32-bit value: the
+	// low halfword holds the vertex count, the high halfword the normal
+	// count. Split arithmetically so it works on either byte order.
+	numVerts = tempNumVertsAndNormals & MAXSHORT;
+	numNormals = ((tempNumVertsAndNormals >> 16) >> 1) & MAXSHORT;
 
 	if (p_storage->ReadLE(numTextureVertices) != SUCCESS) {
 		assertIfBeta10(0);
