@@ -222,11 +222,18 @@ void MxVideoPresenter::PutFrame()
 {
 	if (!m_surface && !m_frameBitmap) {
 		// Neither a surface nor a decoded frame exists yet; every branch
-		// below would dereference one of them.
-		SDL_Log(
-			"MxVideoPresenter::PutFrame: no surface or bitmap for \"%s\", skipping",
-			m_action ? m_action->GetObjectName() : "?"
-		);
+		// below would dereference one of them. This fires every frame for
+		// the registration-book letter stills, so rate-limit it: the first
+		// few, then one in a thousand, or the log drowns in it.
+		static unsigned s_skips = 0;
+		if (s_skips < 8 || (s_skips % 1000) == 0) {
+			SDL_Log(
+				"MxVideoPresenter::PutFrame: no surface or bitmap for \"%s\", skipping (occurrence %u)",
+				m_action ? m_action->GetObjectName() : "?",
+				s_skips + 1
+			);
+		}
+		s_skips++;
 		return;
 	}
 
