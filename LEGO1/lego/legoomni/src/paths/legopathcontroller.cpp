@@ -752,8 +752,17 @@ MxResult LegoPathController::ReadBoundaries(LegoStorage* p_storage)
 // FUNCTION: BETA10 0x100b8864
 MxResult LegoPathController::ReadVector(LegoStorage* p_storage, Mx3DPointFloat& p_vec)
 {
-	if (p_storage->Read(p_vec.GetData(), sizeof(float) * 3) != SUCCESS) {
-		return FAILURE;
+	// The path/boundary geometry is little-endian on disk like every other
+	// stream value; read each float through ReadLE so it is byte-swapped on
+	// big-endian hosts (identity on little-endian). Reading the raw bytes here
+	// left the whole navigation mesh - vertices, edge directions, boundary up
+	// and normals - byte-swapped on PowerPC, which sent the spawn camera into
+	// the void ("blue screen").
+	float* d = p_vec.GetData();
+	for (int i = 0; i < 3; i++) {
+		if (p_storage->ReadLE(d[i]) != SUCCESS) {
+			return FAILURE;
+		}
 	}
 
 	return SUCCESS;
@@ -763,8 +772,13 @@ MxResult LegoPathController::ReadVector(LegoStorage* p_storage, Mx3DPointFloat& 
 // FUNCTION: BETA10 0x100b88a1
 MxResult LegoPathController::ReadVector(LegoStorage* p_storage, Mx4DPointFloat& p_vec)
 {
-	if (p_storage->Read(p_vec.GetData(), sizeof(float) * 4) != SUCCESS) {
-		return FAILURE;
+	// See the Mx3DPointFloat overload above: read each float through ReadLE so
+	// the boundary normals are byte-swapped on big-endian hosts.
+	float* d = p_vec.GetData();
+	for (int i = 0; i < 4; i++) {
+		if (p_storage->ReadLE(d[i]) != SUCCESS) {
+			return FAILURE;
+		}
 	}
 
 	return SUCCESS;
